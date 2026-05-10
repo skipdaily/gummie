@@ -5,6 +5,7 @@ import LandingPagePreview from './components/LandingPagePreview';
 import ResultDisplay from './components/ResultDisplay';
 import { ProductConfig, GeneratedImage, GenerationStatus, LandingPageContent } from './types';
 import { generateLandingPageContent, generateProductDraft, generateProductImage } from './services/geminiService';
+import { saveGeneratedConcept, saveLandingPage } from './services/supabaseService';
 import { Check, FileText, History, RefreshCw, WandSparkles } from 'lucide-react';
 
 const INITIAL_CONFIG: ProductConfig = {
@@ -34,6 +35,7 @@ const App: React.FC = () => {
   const [landingPage, setLandingPage] = useState<LandingPageContent | null>(null);
   const [landingError, setLandingError] = useState<string>('');
   const [isGeneratingLanding, setIsGeneratingLanding] = useState<boolean>(false);
+  const [saveNotice, setSaveNotice] = useState<string>('');
   const landingPreviewRef = useRef<HTMLDivElement>(null);
 
   const selectedConcepts = history.filter(img => selectedConceptIds.includes(img.id));
@@ -66,6 +68,7 @@ const App: React.FC = () => {
 
     setStatus(GenerationStatus.GENERATING);
     setErrorMessage('');
+    setSaveNotice('');
 
     try {
       const imageUrl = await generateProductImage(config);
@@ -82,6 +85,17 @@ const App: React.FC = () => {
       setHistory(prev => [newImage, ...prev]);
       setSelectedConceptIds(prev => [newImage.id, ...prev]);
       setStatus(GenerationStatus.SUCCESS);
+
+      try {
+        const savedImage = await saveGeneratedConcept(newImage);
+        setCurrentImage(savedImage);
+        setHistory(prev => prev.map(img => img.id === savedImage.id ? savedImage : img));
+        setSaveNotice(savedImage.supabaseConceptId ? 'Saved concept and images to Supabase.' : 'Generated locally. Supabase env vars are missing, so it was not saved.');
+      } catch (saveError: any) {
+        const msg = saveError?.message || 'Unknown Supabase save error';
+        console.error(msg, saveError);
+        setSaveNotice(`Generated image, but Supabase save failed: ${msg}`);
+      }
     } catch (error: any) {
       const msg = error?.message || 'Unknown error';
       console.error(msg, error);
@@ -108,10 +122,19 @@ const App: React.FC = () => {
 
     setIsGeneratingLanding(true);
     setLandingError('');
+    setSaveNotice('');
 
     try {
       const content = await generateLandingPageContent(selectedConcepts);
       setLandingPage(content);
+      try {
+        const landingId = await saveLandingPage(content, selectedConcepts);
+        setSaveNotice(landingId ? 'Saved landing page to Supabase.' : 'Generated landing page locally. Supabase env vars are missing, so it was not saved.');
+      } catch (saveError: any) {
+        const msg = saveError?.message || 'Unknown Supabase save error';
+        console.error(msg, saveError);
+        setSaveNotice(`Generated landing page, but Supabase save failed: ${msg}`);
+      }
       setTimeout(() => {
         landingPreviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
@@ -168,6 +191,11 @@ const App: React.FC = () => {
         {draftError && (
           <p className="mt-3 text-red-400/80 font-mono text-xs break-all bg-red-950/30 border border-red-900/30 rounded p-3">
             {draftError}
+          </p>
+        )}
+        {saveNotice && (
+          <p className="mt-3 text-hazard/90 font-mono text-xs break-all bg-hazard/10 border border-hazard/20 rounded p-3">
+            {saveNotice}
           </p>
         )}
       </div>

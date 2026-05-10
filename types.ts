@@ -20,6 +20,7 @@ export interface GeneratedImage {
   promptUsed: string;
   config: ProductConfig;
   timestamp: number;
+  supabaseConceptId?: string;
 }
 
 export interface LandingFeature {
