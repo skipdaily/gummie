@@ -41,8 +41,18 @@ const configFromSavedConcept = (concept: SavedConcept): ProductConfig => ({
   logoImage: concept.logoImageUrl || null,
 });
 
+const CONFIG_STORAGE_KEY = 'grit-grime-product-config';
+
+const loadStoredConfig = (): ProductConfig => {
+  try {
+    const stored = localStorage.getItem(CONFIG_STORAGE_KEY);
+    if (stored) return { ...INITIAL_CONFIG, ...JSON.parse(stored) };
+  } catch {}
+  return INITIAL_CONFIG;
+};
+
 const App: React.FC = () => {
-  const [config, setConfig] = useState<ProductConfig>(INITIAL_CONFIG);
+  const [config, setConfig] = useState<ProductConfig>(loadStoredConfig);
   const [status, setStatus] = useState<GenerationStatus>(GenerationStatus.IDLE);
   const [currentImage, setCurrentImage] = useState<GeneratedImage | null>(null);
   const [history, setHistory] = useState<GeneratedImage[]>([]);
@@ -121,6 +131,12 @@ const App: React.FC = () => {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+    } catch {}
+  }, [config]);
 
   useEffect(() => {
     if (session) {
