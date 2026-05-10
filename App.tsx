@@ -12,6 +12,7 @@ import { getSession, listSavedConcepts, onAuthChange, saveAssetDraft, saveGenera
 import { Check, FileText, History, LogOut, RefreshCw, WandSparkles } from 'lucide-react';
 
 const INITIAL_CONFIG: ProductConfig = {
+  brandName: 'GRIT & GRIME',
   productName: 'FIELDKIT COOLER',
   tagline: 'Built for long days, rough weather, and gear that needs to stay ready',
   targetAudience: 'Outdoor crews',
@@ -26,6 +27,7 @@ const INITIAL_CONFIG: ProductConfig = {
 };
 
 const configFromSavedConcept = (concept: SavedConcept): ProductConfig => ({
+  brandName: concept.brandName,
   productName: concept.productName,
   tagline: concept.tagline,
   targetAudience: concept.targetAudience,

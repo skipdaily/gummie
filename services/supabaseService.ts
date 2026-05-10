@@ -228,6 +228,7 @@ const uploadDataUrl = async (
 };
 
 const sanitizeConfig = (config: ProductConfig) => ({
+  brandName: config.brandName,
   productName: config.productName,
   tagline: config.tagline,
   targetAudience: config.targetAudience,
@@ -244,6 +245,7 @@ const sanitizeConfig = (config: ProductConfig) => ({
 const savedConceptSelect = `
   id,
   client_id,
+  brand_name,
   product_name,
   tagline,
   target_audience,
@@ -265,6 +267,7 @@ const savedConceptSelect = `
 const mapSavedConceptRow = (row: any): SavedConcept => ({
   id: row.id,
   clientId: row.client_id,
+  brandName: row.brand_name,
   productName: row.product_name,
   tagline: row.tagline,
   targetAudience: row.target_audience,
@@ -328,6 +331,7 @@ export const saveAssetDraft = async (config: ProductConfig): Promise<SavedConcep
     .insert({
       id: conceptId,
       user_id: owner.userId,
+      brand_name: config.brandName,
       product_name: config.productName,
       tagline: config.tagline,
       target_audience: config.targetAudience,
@@ -381,6 +385,7 @@ export const saveGeneratedConcept = async (image: GeneratedImage): Promise<Gener
       id: conceptId,
       user_id: owner.userId,
       client_id: image.id,
+      brand_name: image.config.brandName,
       product_name: image.config.productName,
       tagline: image.config.tagline,
       target_audience: image.config.targetAudience,

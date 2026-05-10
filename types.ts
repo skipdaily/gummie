@@ -1,4 +1,5 @@
 export interface ProductConfig {
+  brandName: string;
   productName: string;
   tagline: string;
   targetAudience: string;
@@ -26,6 +27,7 @@ export interface GeneratedImage {
 export interface SavedConcept {
   id: string;
   clientId?: string | null;
+  brandName: string;
   productName: string;
   tagline: string;
   targetAudience: string;

@@ -59,6 +59,7 @@ create table if not exists public.product_concepts (
   -- existing local browser records.
   client_id text unique,
 
+  brand_name text not null default '',
   product_name text not null,
   tagline text not null,
   target_audience text not null,

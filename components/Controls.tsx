@@ -154,6 +154,16 @@ const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGen
         <div className="space-y-5 border-b border-slate-200 pb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
+              <label className={labelClass}>Brand Name</label>
+              <input
+                type="text"
+                value={config.brandName}
+                onChange={(e) => handleChange('brandName', e.target.value)}
+                placeholder="e.g. GRIT & GRIME"
+                className={`${inputClass} font-display uppercase tracking-wide`}
+              />
+            </div>
+            <div>
               <label className={labelClass}>Product Name</label>
               <input
                 type="text"
@@ -163,16 +173,16 @@ const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGen
                 className={`${inputClass} font-display uppercase tracking-wide`}
               />
             </div>
-            <div>
-              <label className={labelClass}>Tagline / Subtitle</label>
-              <textarea
-                value={config.tagline}
-                onChange={(e) => handleChange('tagline', e.target.value)}
-                placeholder="e.g. Built for long days in rough conditions"
-                rows={3}
-                className={textareaClass}
-              />
-            </div>
+          </div>
+          <div>
+            <label className={labelClass}>Tagline / Subtitle</label>
+            <textarea
+              value={config.tagline}
+              onChange={(e) => handleChange('tagline', e.target.value)}
+              placeholder="e.g. Built for long days in rough conditions"
+              rows={3}
+              className={textareaClass}
+            />
           </div>
           
           <div>
