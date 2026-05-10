@@ -1,5 +1,5 @@
 import { createClient, Session, SupabaseClient } from '@supabase/supabase-js';
-import { GeneratedImage, LandingPageContent, ProductConfig } from '../types';
+import { GeneratedImage, LandingPageContent, ProductConfig, SavedConcept } from '../types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -240,6 +240,123 @@ const sanitizeConfig = (config: ProductConfig) => ({
   hasReferenceImage: !!config.referenceImage,
   hasLogoImage: !!config.logoImage,
 });
+
+const savedConceptSelect = `
+  id,
+  client_id,
+  product_name,
+  tagline,
+  target_audience,
+  product_details,
+  package_style,
+  accent_color,
+  environment_details,
+  scene_description,
+  label_image_description,
+  reference_image_url,
+  logo_image_url,
+  generated_image_url,
+  prompt_used,
+  generation_status,
+  created_at,
+  updated_at
+`;
+
+const mapSavedConceptRow = (row: any): SavedConcept => ({
+  id: row.id,
+  clientId: row.client_id,
+  productName: row.product_name,
+  tagline: row.tagline,
+  targetAudience: row.target_audience,
+  productDetails: row.product_details,
+  packageStyle: row.package_style,
+  accentColor: row.accent_color,
+  environmentDetails: row.environment_details,
+  sceneDescription: row.scene_description,
+  labelImageDescription: row.label_image_description,
+  referenceImageUrl: row.reference_image_url,
+  logoImageUrl: row.logo_image_url,
+  generatedImageUrl: row.generated_image_url,
+  promptUsed: row.prompt_used,
+  generationStatus: row.generation_status,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+export const listSavedConcepts = async (): Promise<SavedConcept[]> => {
+  const client = await getSupabaseClient();
+  if (!client) {
+    return [];
+  }
+
+  await ensureSaveOwner(client);
+
+  const result = await client
+    .from('product_concepts')
+    .select(savedConceptSelect)
+    .order('created_at', { ascending: false })
+    .limit(80);
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return (result.data || []).map(mapSavedConceptRow);
+};
+
+export const saveAssetDraft = async (config: ProductConfig): Promise<SavedConcept> => {
+  const client = await getSupabaseClient();
+  if (!client) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  if (!config.referenceImage && !config.logoImage) {
+    throw new Error('Upload a hero reference image or logo before saving assets.');
+  }
+
+  const owner = await ensureSaveOwner(client);
+  const conceptId = crypto.randomUUID();
+  const basePath = `${owner.storageFolder}/${conceptId}`;
+
+  const [referenceUpload, logoUpload] = await Promise.all([
+    uploadDataUrl(client, ASSETS_BUCKET, `${basePath}/reference`, config.referenceImage),
+    uploadDataUrl(client, ASSETS_BUCKET, `${basePath}/logo`, config.logoImage),
+  ]);
+
+  const insertResult = await client
+    .from('product_concepts')
+    .insert({
+      id: conceptId,
+      user_id: owner.userId,
+      product_name: config.productName,
+      tagline: config.tagline,
+      target_audience: config.targetAudience,
+      product_details: config.productDetails,
+      package_style: config.packageStyle,
+      accent_color: config.accentColor,
+      environment_details: config.environmentDetails,
+      scene_description: config.sceneDescription,
+      label_image_description: config.labelImageDescription,
+      reference_image_path: referenceUpload.path,
+      reference_image_url: referenceUpload.url,
+      logo_image_path: logoUpload.path,
+      logo_image_url: logoUpload.url,
+      prompt_used: null,
+      generation_status: 'draft',
+      raw_config: sanitizeConfig(config),
+      image_metadata: {
+        savedAssetDraft: true,
+      },
+    })
+    .select(savedConceptSelect)
+    .single();
+
+  if (insertResult.error) {
+    throw insertResult.error;
+  }
+
+  return mapSavedConceptRow(insertResult.data);
+};
 
 export const saveGeneratedConcept = async (image: GeneratedImage): Promise<GeneratedImage> => {
   const client = await getSupabaseClient();

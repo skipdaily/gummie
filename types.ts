@@ -23,6 +23,27 @@ export interface GeneratedImage {
   supabaseConceptId?: string;
 }
 
+export interface SavedConcept {
+  id: string;
+  clientId?: string | null;
+  productName: string;
+  tagline: string;
+  targetAudience: string;
+  productDetails: string;
+  packageStyle: string;
+  accentColor: string;
+  environmentDetails: string;
+  sceneDescription: string;
+  labelImageDescription: string;
+  referenceImageUrl?: string | null;
+  logoImageUrl?: string | null;
+  generatedImageUrl?: string | null;
+  promptUsed?: string | null;
+  generationStatus: 'draft' | 'generating' | 'success' | 'error';
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface LandingFeature {
   title: string;
   body: string;

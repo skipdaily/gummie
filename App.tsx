@@ -1,13 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import Layout from './components/Layout';
 import AuthPanel from './components/AuthPanel';
 import Controls from './components/Controls';
 import LandingPagePreview from './components/LandingPagePreview';
 import ResultDisplay from './components/ResultDisplay';
-import { ProductConfig, GeneratedImage, GenerationStatus, LandingPageContent } from './types';
+import UserDashboard from './components/UserDashboard';
+import { ProductConfig, GeneratedImage, GenerationStatus, LandingPageContent, SavedConcept } from './types';
 import { generateLandingPageContent, generateProductDraft, generateProductImage } from './services/geminiService';
-import { getSession, onAuthChange, saveGeneratedConcept, saveLandingPage, signOut } from './services/supabaseService';
+import { getSession, listSavedConcepts, onAuthChange, saveAssetDraft, saveGeneratedConcept, saveLandingPage, signOut } from './services/supabaseService';
 import { Check, FileText, History, LogOut, RefreshCw, WandSparkles } from 'lucide-react';
 
 const INITIAL_CONFIG: ProductConfig = {
@@ -23,6 +24,20 @@ const INITIAL_CONFIG: ProductConfig = {
   referenceImage: null,
   logoImage: null
 };
+
+const configFromSavedConcept = (concept: SavedConcept): ProductConfig => ({
+  productName: concept.productName,
+  tagline: concept.tagline,
+  targetAudience: concept.targetAudience,
+  productDetails: concept.productDetails,
+  packageStyle: concept.packageStyle,
+  accentColor: concept.accentColor,
+  environmentDetails: concept.environmentDetails,
+  sceneDescription: concept.sceneDescription,
+  labelImageDescription: concept.labelImageDescription,
+  referenceImage: concept.referenceImageUrl || null,
+  logoImage: concept.logoImageUrl || null,
+});
 
 const App: React.FC = () => {
   const [config, setConfig] = useState<ProductConfig>(INITIAL_CONFIG);
@@ -41,9 +56,34 @@ const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [savedConcepts, setSavedConcepts] = useState<SavedConcept[]>([]);
+  const [isDashboardLoading, setIsDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState('');
+  const [isSavingAssets, setIsSavingAssets] = useState(false);
   const landingPreviewRef = useRef<HTMLDivElement>(null);
 
   const selectedConcepts = history.filter(img => selectedConceptIds.includes(img.id));
+
+  const loadSavedDashboard = useCallback(async () => {
+    if (!session) {
+      setSavedConcepts([]);
+      return;
+    }
+
+    setIsDashboardLoading(true);
+    setDashboardError('');
+
+    try {
+      const saved = await listSavedConcepts();
+      setSavedConcepts(saved);
+    } catch (error: any) {
+      const msg = error?.message || 'Could not load saved assets.';
+      console.error(msg, error);
+      setDashboardError(msg);
+    } finally {
+      setIsDashboardLoading(false);
+    }
+  }, [session]);
 
   useEffect(() => {
     let isMounted = true;
@@ -80,6 +120,15 @@ const App: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (session) {
+      loadSavedDashboard();
+      return;
+    }
+
+    setSavedConcepts([]);
+  }, [session, loadSavedDashboard]);
+
   const handleSignOut = async () => {
     await signOut();
     setSession(null);
@@ -87,6 +136,8 @@ const App: React.FC = () => {
     setHistory([]);
     setSelectedConceptIds([]);
     setLandingPage(null);
+    setSavedConcepts([]);
+    setDashboardError('');
     setSaveNotice('');
   };
 
@@ -141,6 +192,9 @@ const App: React.FC = () => {
         setCurrentImage(savedImage);
         setHistory(prev => prev.map(img => img.id === savedImage.id ? savedImage : img));
         setSaveNotice(savedImage.supabaseConceptId ? 'Saved concept and images to Supabase.' : 'Generated locally. Supabase env vars are missing, so it was not saved.');
+        if (savedImage.supabaseConceptId) {
+          await loadSavedDashboard();
+        }
       } catch (saveError: any) {
         const msg = saveError?.message || 'Unknown Supabase save error';
         console.error(msg, saveError);
@@ -152,6 +206,73 @@ const App: React.FC = () => {
       setErrorMessage(msg);
       setStatus(GenerationStatus.ERROR);
     }
+  };
+
+  const handleSaveCurrentAssets = async () => {
+    if (isSavingAssets) return;
+
+    setIsSavingAssets(true);
+    setDashboardError('');
+    setSaveNotice('');
+
+    try {
+      const saved = await saveAssetDraft(config);
+      setSavedConcepts(prev => [saved, ...prev.filter(concept => concept.id !== saved.id)]);
+      setSaveNotice('Saved current hero and logo assets to Supabase.');
+      await loadSavedDashboard();
+    } catch (error: any) {
+      const msg = error?.message || 'Could not save current assets.';
+      console.error(msg, error);
+      setDashboardError(msg);
+    } finally {
+      setIsSavingAssets(false);
+    }
+  };
+
+  const handleLoadSavedConcept = (concept: SavedConcept) => {
+    const nextConfig = configFromSavedConcept(concept);
+    setConfig(nextConfig);
+
+    if (!concept.generatedImageUrl) {
+      setCurrentImage(null);
+      setStatus(GenerationStatus.IDLE);
+      setSaveNotice('Loaded saved assets into the editor.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    const restoredImage: GeneratedImage = {
+      id: concept.clientId || concept.id,
+      imageUrl: concept.generatedImageUrl,
+      promptUsed: concept.promptUsed || 'Loaded from Supabase dashboard',
+      config: nextConfig,
+      timestamp: new Date(concept.createdAt).getTime(),
+      supabaseConceptId: concept.id,
+    };
+
+    setCurrentImage(restoredImage);
+    setHistory(prev => [
+      restoredImage,
+      ...prev.filter(img => img.id !== restoredImage.id && img.supabaseConceptId !== concept.id),
+    ]);
+    setSelectedConceptIds(prev => (
+      prev.includes(restoredImage.id) ? prev : [restoredImage.id, ...prev]
+    ));
+    setStatus(GenerationStatus.SUCCESS);
+    setSaveNotice('Loaded saved concept from Supabase.');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleUseReference = (url: string) => {
+    setConfig(prev => ({ ...prev, referenceImage: url }));
+    setSaveNotice('Loaded saved hero image into the editor.');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleUseLogo = (url: string) => {
+    setConfig(prev => ({ ...prev, logoImage: url }));
+    setSaveNotice('Loaded saved logo into the editor.');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const loadFromHistory = (img: GeneratedImage) => {
@@ -237,6 +358,25 @@ const App: React.FC = () => {
         </div>
       </div>
 
+      <UserDashboard
+        concepts={savedConcepts}
+        isLoading={isDashboardLoading}
+        isSavingAssets={isSavingAssets}
+        canSaveCurrentAssets={!!config.referenceImage || !!config.logoImage}
+        error={dashboardError}
+        onRefresh={() => { loadSavedDashboard(); }}
+        onSaveCurrentAssets={() => { handleSaveCurrentAssets(); }}
+        onLoadConcept={handleLoadSavedConcept}
+        onUseReference={handleUseReference}
+        onUseLogo={handleUseLogo}
+      />
+
+      {saveNotice && (
+        <p className="mb-8 text-amber-800 font-mono text-xs break-all bg-amber-50 border border-amber-200 rounded p-3">
+          {saveNotice}
+        </p>
+      )}
+
       <div className="mb-8 bg-white border border-slate-200 rounded-sm p-6 shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
           <WandSparkles size={120} />
@@ -279,11 +419,6 @@ const App: React.FC = () => {
         {draftError && (
           <p className="mt-3 text-red-700 font-mono text-xs break-all bg-red-50 border border-red-200 rounded p-3">
             {draftError}
-          </p>
-        )}
-        {saveNotice && (
-          <p className="mt-3 text-amber-800 font-mono text-xs break-all bg-amber-50 border border-amber-200 rounded p-3">
-            {saveNotice}
           </p>
         )}
       </div>

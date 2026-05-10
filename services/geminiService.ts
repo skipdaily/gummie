@@ -25,6 +25,42 @@ const getBase64Data = (dataUrl: string) => {
   return { mimeType: matches[1], data: matches[2] };
 };
 
+const blobToBase64 = (blob: Blob) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+
+  reader.onloadend = () => {
+    const result = String(reader.result || '');
+    const base64 = result.split(',')[1];
+
+    if (!base64) {
+      reject(new Error('Could not read input image'));
+      return;
+    }
+
+    resolve(base64);
+  };
+
+  reader.onerror = () => reject(new Error('Could not read input image'));
+  reader.readAsDataURL(blob);
+});
+
+const getInlineImageData = async (source: string) => {
+  if (source.startsWith('data:')) {
+    return getBase64Data(source);
+  }
+
+  const response = await fetch(source);
+  if (!response.ok) {
+    throw new Error('Could not load saved input image');
+  }
+
+  const blob = await response.blob();
+  return {
+    mimeType: blob.type || 'image/png',
+    data: await blobToBase64(blob),
+  };
+};
+
 const parseDraftJson = (text: string): ProductDraft => {
   const jsonText = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
   const match = jsonText.match(/\{[\s\S]*\}/);
@@ -342,7 +378,7 @@ export const generateProductImage = async (config: ProductConfig): Promise<strin
 
   // If there is a reference image, add it as the first part
   if (config.referenceImage) {
-    const { mimeType, data } = getBase64Data(config.referenceImage);
+    const { mimeType, data } = await getInlineImageData(config.referenceImage);
     parts.push({
       inlineData: {
         mimeType,
@@ -353,7 +389,7 @@ export const generateProductImage = async (config: ProductConfig): Promise<strin
 
   // If there is a logo image, add it after the style reference image.
   if (config.logoImage) {
-    const { mimeType, data } = getBase64Data(config.logoImage);
+    const { mimeType, data } = await getInlineImageData(config.logoImage);
     parts.push({
       inlineData: {
         mimeType,
