@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Eye, EyeOff, LockKeyhole, Mail, RefreshCw } from 'lucide-react';
 import {
+  checkSupabaseConfigured,
   isSupabaseConfigured,
   sendPasswordReset,
   signInWithEmail,
@@ -26,9 +27,31 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
   const [isWorking, setIsWorking] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const configured = isSupabaseConfigured();
+  const [configured, setConfigured] = useState(isSupabaseConfigured());
+  const [isCheckingConfig, setIsCheckingConfig] = useState(!isSupabaseConfigured());
   const activeMode = recoveryMode ? 'reset' : mode;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    checkSupabaseConfigured()
+      .then(isConfigured => {
+        if (isMounted) {
+          setConfigured(isConfigured);
+          setIsCheckingConfig(false);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setConfigured(false);
+          setIsCheckingConfig(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const resetFeedback = () => {
     setMessage('');
@@ -50,8 +73,15 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
     resetFeedback();
 
     if (!configured) {
-      setError('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel.');
-      return;
+      setIsCheckingConfig(true);
+      const isConfigured = await checkSupabaseConfigured();
+      setConfigured(isConfigured);
+      setIsCheckingConfig(false);
+
+      if (!isConfigured) {
+        setError('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.');
+        return;
+      }
     }
 
     setIsWorking(true);
@@ -189,17 +219,23 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
             </div>
           )}
 
-          {!configured && (
+          {isCheckingConfig && (
+            <p className="text-slate-400 font-mono text-xs bg-slate-950 border border-slate-800 rounded p-3">
+              Checking Supabase configuration...
+            </p>
+          )}
+
+          {!configured && !isCheckingConfig && (
             <p className="text-hazard/90 font-mono text-xs bg-hazard/10 border border-hazard/20 rounded p-3">
-              Supabase is not configured in this build yet. Add the Vercel environment variables, then redeploy.
+              Supabase is not configured yet. Add the Vercel environment variables, then redeploy.
             </p>
           )}
 
           <button
             type="submit"
-            disabled={isWorking}
+            disabled={isWorking || isCheckingConfig}
             className={`w-full relative overflow-hidden flex items-center justify-center gap-3 py-4 px-6 font-display font-bold text-lg uppercase tracking-widest transition-all border-b-4 ${
-              isWorking
+              isWorking || isCheckingConfig
                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed border-slate-700'
                 : 'bg-hazard hover:bg-hazard-dark text-black border-hazard-dark active:border-b-0 active:translate-y-1'
             }`}

@@ -7,28 +7,93 @@ const ASSETS_BUCKET = (import.meta.env.VITE_SUPABASE_STORAGE_ASSETS_BUCKET as st
 const RENDERS_BUCKET = (import.meta.env.VITE_SUPABASE_STORAGE_RENDERS_BUCKET as string | undefined) || 'product-concept-renders';
 
 let supabase: SupabaseClient | null = null;
+let runtimeConfig: SupabaseConfig | null = null;
+let runtimeConfigPromise: Promise<SupabaseConfig | null> | null = null;
+
+interface SupabaseConfig {
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+}
 
 interface SaveOwner {
   userId: string;
   storageFolder: string;
 }
 
-export const getSupabase = () => {
+const buildTimeConfig = (): SupabaseConfig | null => {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return null;
   }
 
+  return {
+    supabaseUrl: SUPABASE_URL,
+    supabaseAnonKey: SUPABASE_ANON_KEY,
+  };
+};
+
+const createSupabase = (config: SupabaseConfig) => {
   if (!supabase) {
-    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
   }
 
   return supabase;
 };
 
+export const getSupabase = () => {
+  const config = buildTimeConfig() || runtimeConfig;
+  return config ? createSupabase(config) : null;
+};
+
+const loadRuntimeConfig = async (): Promise<SupabaseConfig | null> => {
+  if (runtimeConfig) {
+    return runtimeConfig;
+  }
+
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  if (!runtimeConfigPromise) {
+    runtimeConfigPromise = fetch('/api/supabase-config', { cache: 'no-store' })
+      .then(async response => {
+        if (!response.ok) {
+          return null;
+        }
+
+        const data = await response.json();
+        if (!data?.supabaseUrl || !data?.supabaseAnonKey) {
+          return null;
+        }
+
+        runtimeConfig = {
+          supabaseUrl: data.supabaseUrl,
+          supabaseAnonKey: data.supabaseAnonKey,
+        };
+
+        return runtimeConfig;
+      })
+      .catch(() => null);
+  }
+
+  return runtimeConfigPromise;
+};
+
+const getSupabaseClient = async () => {
+  const configuredClient = getSupabase();
+  if (configuredClient) {
+    return configuredClient;
+  }
+
+  const config = await loadRuntimeConfig();
+  return config ? createSupabase(config) : null;
+};
+
 export const isSupabaseConfigured = () => !!getSupabase();
 
+export const checkSupabaseConfigured = async () => !!(await getSupabaseClient());
+
 export const getSession = async (): Promise<Session | null> => {
-  const client = getSupabase();
+  const client = await getSupabaseClient();
   if (!client) return null;
 
   const result = await client.auth.getSession();
@@ -40,7 +105,7 @@ export const getSession = async (): Promise<Session | null> => {
 };
 
 export const signInWithEmail = async (email: string, password: string) => {
-  const client = getSupabase();
+  const client = await getSupabaseClient();
   if (!client) throw new Error('Supabase is not configured.');
 
   const result = await client.auth.signInWithPassword({ email, password });
@@ -49,7 +114,7 @@ export const signInWithEmail = async (email: string, password: string) => {
 };
 
 export const signUpWithEmail = async (email: string, password: string) => {
-  const client = getSupabase();
+  const client = await getSupabaseClient();
   if (!client) throw new Error('Supabase is not configured.');
 
   const result = await client.auth.signUp({
@@ -64,7 +129,7 @@ export const signUpWithEmail = async (email: string, password: string) => {
 };
 
 export const sendPasswordReset = async (email: string) => {
-  const client = getSupabase();
+  const client = await getSupabaseClient();
   if (!client) throw new Error('Supabase is not configured.');
 
   const result = await client.auth.resetPasswordForEmail(email, {
@@ -74,7 +139,7 @@ export const sendPasswordReset = async (email: string) => {
 };
 
 export const updatePassword = async (password: string) => {
-  const client = getSupabase();
+  const client = await getSupabaseClient();
   if (!client) throw new Error('Supabase is not configured.');
 
   const result = await client.auth.updateUser({ password });
@@ -82,7 +147,7 @@ export const updatePassword = async (password: string) => {
 };
 
 export const signOut = async () => {
-  const client = getSupabase();
+  const client = await getSupabaseClient();
   if (!client) return;
 
   const result = await client.auth.signOut();
@@ -91,8 +156,7 @@ export const signOut = async () => {
 
 export const onAuthChange = (
   callback: (event: string, session: Session | null) => void
-) => {
-  const client = getSupabase();
+) => getSupabaseClient().then(client => {
   if (!client) {
     return { unsubscribe: () => {} };
   }
@@ -102,7 +166,7 @@ export const onAuthChange = (
   });
 
   return data.subscription;
-};
+});
 
 const ensureSaveOwner = async (client: SupabaseClient): Promise<SaveOwner> => {
   const sessionResult = await client.auth.getSession();
@@ -178,7 +242,7 @@ const sanitizeConfig = (config: ProductConfig) => ({
 });
 
 export const saveGeneratedConcept = async (image: GeneratedImage): Promise<GeneratedImage> => {
-  const client = getSupabase();
+  const client = await getSupabaseClient();
   if (!client) {
     console.warn('Supabase save skipped: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing.');
     return image;
@@ -241,7 +305,7 @@ export const saveLandingPage = async (
   content: LandingPageContent,
   concepts: GeneratedImage[]
 ) => {
-  const client = getSupabase();
+  const client = await getSupabaseClient();
   if (!client) {
     console.warn('Supabase landing page save skipped: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing.');
     return null;

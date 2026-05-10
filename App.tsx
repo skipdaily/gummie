@@ -47,28 +47,32 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let isMounted = true;
+    let subscription: { unsubscribe: () => void } = { unsubscribe: () => {} };
 
-    getSession()
-      .then(currentSession => {
+    const setupAuth = async () => {
+      try {
+        const currentSession = await getSession();
         if (isMounted) {
           setSession(currentSession);
           setIsAuthLoading(false);
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error(error);
         if (isMounted) {
           setIsAuthLoading(false);
         }
-      });
-
-    const subscription = onAuthChange((event, nextSession) => {
-      setSession(nextSession);
-      setIsAuthLoading(false);
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsPasswordRecovery(true);
       }
-    });
+
+      subscription = await onAuthChange((event, nextSession) => {
+        setSession(nextSession);
+        setIsAuthLoading(false);
+        if (event === 'PASSWORD_RECOVERY') {
+          setIsPasswordRecovery(true);
+        }
+      });
+    };
+
+    setupAuth();
 
     return () => {
       isMounted = false;
