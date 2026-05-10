@@ -1,12 +1,14 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Session } from '@supabase/supabase-js';
 import Layout from './components/Layout';
+import AuthPanel from './components/AuthPanel';
 import Controls from './components/Controls';
 import LandingPagePreview from './components/LandingPagePreview';
 import ResultDisplay from './components/ResultDisplay';
 import { ProductConfig, GeneratedImage, GenerationStatus, LandingPageContent } from './types';
 import { generateLandingPageContent, generateProductDraft, generateProductImage } from './services/geminiService';
-import { saveGeneratedConcept, saveLandingPage } from './services/supabaseService';
-import { Check, FileText, History, RefreshCw, WandSparkles } from 'lucide-react';
+import { getSession, onAuthChange, saveGeneratedConcept, saveLandingPage, signOut } from './services/supabaseService';
+import { Check, FileText, History, LogOut, RefreshCw, WandSparkles } from 'lucide-react';
 
 const INITIAL_CONFIG: ProductConfig = {
   productName: 'FIELDKIT COOLER',
@@ -36,9 +38,53 @@ const App: React.FC = () => {
   const [landingError, setLandingError] = useState<string>('');
   const [isGeneratingLanding, setIsGeneratingLanding] = useState<boolean>(false);
   const [saveNotice, setSaveNotice] = useState<string>('');
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
   const landingPreviewRef = useRef<HTMLDivElement>(null);
 
   const selectedConcepts = history.filter(img => selectedConceptIds.includes(img.id));
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getSession()
+      .then(currentSession => {
+        if (isMounted) {
+          setSession(currentSession);
+          setIsAuthLoading(false);
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        if (isMounted) {
+          setIsAuthLoading(false);
+        }
+      });
+
+    const subscription = onAuthChange((event, nextSession) => {
+      setSession(nextSession);
+      setIsAuthLoading(false);
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setSession(null);
+    setCurrentImage(null);
+    setHistory([]);
+    setSelectedConceptIds([]);
+    setLandingPage(null);
+    setSaveNotice('');
+  };
 
   const handleDraftSpecs = async () => {
     const trimmedIdea = idea.trim();
@@ -147,8 +193,46 @@ const App: React.FC = () => {
     }
   };
 
+  if (isAuthLoading) {
+    return (
+      <Layout>
+        <div className="min-h-[calc(100vh-220px)] flex items-center justify-center text-slate-500 font-mono uppercase">
+          Checking Session...
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!session || isPasswordRecovery) {
+    return (
+      <Layout>
+        <AuthPanel
+          recoveryMode={isPasswordRecovery}
+          onAuthComplete={() => getSession().then(setSession)}
+          onRecoveryComplete={() => setIsPasswordRecovery(false)}
+        />
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
+      <div className="mb-4 flex justify-end">
+        <div className="flex items-center gap-3 bg-slate-900 border border-slate-700 rounded-sm px-4 py-3">
+          <div className="text-right">
+            <div className="text-xs font-mono text-slate-500 uppercase">Signed In</div>
+            <div className="text-sm text-white">{session.user.email}</div>
+          </div>
+          <button
+            onClick={handleSignOut}
+            className="bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-sm border border-slate-600 transition-colors"
+            title="Sign Out"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
+      </div>
+
       <div className="mb-8 bg-slate-900 border border-slate-700 rounded-sm p-6 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
           <WandSparkles size={120} />

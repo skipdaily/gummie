@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, Session, SupabaseClient } from '@supabase/supabase-js';
 import { GeneratedImage, LandingPageContent, ProductConfig } from '../types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -9,12 +9,11 @@ const RENDERS_BUCKET = (import.meta.env.VITE_SUPABASE_STORAGE_RENDERS_BUCKET as 
 let supabase: SupabaseClient | null = null;
 
 interface SaveOwner {
-  userId: string | null;
+  userId: string;
   storageFolder: string;
-  mode: 'authenticated' | 'public';
 }
 
-const getSupabase = () => {
+export const getSupabase = () => {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return null;
   }
@@ -26,32 +25,99 @@ const getSupabase = () => {
   return supabase;
 };
 
+export const isSupabaseConfigured = () => !!getSupabase();
+
+export const getSession = async (): Promise<Session | null> => {
+  const client = getSupabase();
+  if (!client) return null;
+
+  const result = await client.auth.getSession();
+  if (result.error) {
+    throw result.error;
+  }
+
+  return result.data.session;
+};
+
+export const signInWithEmail = async (email: string, password: string) => {
+  const client = getSupabase();
+  if (!client) throw new Error('Supabase is not configured.');
+
+  const result = await client.auth.signInWithPassword({ email, password });
+  if (result.error) throw result.error;
+  return result.data;
+};
+
+export const signUpWithEmail = async (email: string, password: string) => {
+  const client = getSupabase();
+  if (!client) throw new Error('Supabase is not configured.');
+
+  const result = await client.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: window.location.origin,
+    },
+  });
+  if (result.error) throw result.error;
+  return result.data;
+};
+
+export const sendPasswordReset = async (email: string) => {
+  const client = getSupabase();
+  if (!client) throw new Error('Supabase is not configured.');
+
+  const result = await client.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin,
+  });
+  if (result.error) throw result.error;
+};
+
+export const updatePassword = async (password: string) => {
+  const client = getSupabase();
+  if (!client) throw new Error('Supabase is not configured.');
+
+  const result = await client.auth.updateUser({ password });
+  if (result.error) throw result.error;
+};
+
+export const signOut = async () => {
+  const client = getSupabase();
+  if (!client) return;
+
+  const result = await client.auth.signOut();
+  if (result.error) throw result.error;
+};
+
+export const onAuthChange = (
+  callback: (event: string, session: Session | null) => void
+) => {
+  const client = getSupabase();
+  if (!client) {
+    return { unsubscribe: () => {} };
+  }
+
+  const { data } = client.auth.onAuthStateChange((event, session) => {
+    callback(event, session);
+  });
+
+  return data.subscription;
+};
+
 const ensureSaveOwner = async (client: SupabaseClient): Promise<SaveOwner> => {
   const sessionResult = await client.auth.getSession();
   if (sessionResult.error) {
-    console.warn('Supabase session lookup failed. Falling back to public save mode.', sessionResult.error);
-    return { userId: null, storageFolder: 'public', mode: 'public' };
+    throw sessionResult.error;
   }
 
   if (sessionResult.data.session?.user) {
     return {
       userId: sessionResult.data.session.user.id,
       storageFolder: sessionResult.data.session.user.id,
-      mode: 'authenticated',
     };
   }
 
-  const signInResult = await client.auth.signInAnonymously();
-  if (signInResult.error || !signInResult.data.user) {
-    console.warn('Anonymous auth is not enabled. Falling back to public save mode.', signInResult.error);
-    return { userId: null, storageFolder: 'public', mode: 'public' };
-  }
-
-  return {
-    userId: signInResult.data.user.id,
-    storageFolder: signInResult.data.user.id,
-    mode: 'authenticated',
-  };
+  throw new Error('Please sign in before saving to Supabase.');
 };
 
 const dataUrlToBlob = async (dataUrl: string) => {
@@ -155,7 +221,6 @@ export const saveGeneratedConcept = async (image: GeneratedImage): Promise<Gener
       image_metadata: {
         localTimestamp: image.timestamp,
         localImageUrlWasDataUrl: image.imageUrl.startsWith('data:'),
-        saveMode: owner.mode,
       },
     })
     .select('id, generated_image_url')
