@@ -8,6 +8,12 @@ const RENDERS_BUCKET = (import.meta.env.VITE_SUPABASE_STORAGE_RENDERS_BUCKET as 
 
 let supabase: SupabaseClient | null = null;
 
+interface SaveOwner {
+  userId: string | null;
+  storageFolder: string;
+  mode: 'authenticated' | 'public';
+}
+
 const getSupabase = () => {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return null;
@@ -20,24 +26,32 @@ const getSupabase = () => {
   return supabase;
 };
 
-const ensureUser = async (client: SupabaseClient) => {
+const ensureSaveOwner = async (client: SupabaseClient): Promise<SaveOwner> => {
   const sessionResult = await client.auth.getSession();
   if (sessionResult.error) {
-    throw sessionResult.error;
+    console.warn('Supabase session lookup failed. Falling back to public save mode.', sessionResult.error);
+    return { userId: null, storageFolder: 'public', mode: 'public' };
   }
 
   if (sessionResult.data.session?.user) {
-    return sessionResult.data.session.user;
+    return {
+      userId: sessionResult.data.session.user.id,
+      storageFolder: sessionResult.data.session.user.id,
+      mode: 'authenticated',
+    };
   }
 
   const signInResult = await client.auth.signInAnonymously();
   if (signInResult.error || !signInResult.data.user) {
-    throw new Error(
-      'Supabase save failed because anonymous auth is not enabled. Enable Auth > Sign In / Providers > Anonymous sign-ins in Supabase, or add a login flow.'
-    );
+    console.warn('Anonymous auth is not enabled. Falling back to public save mode.', signInResult.error);
+    return { userId: null, storageFolder: 'public', mode: 'public' };
   }
 
-  return signInResult.data.user;
+  return {
+    userId: signInResult.data.user.id,
+    storageFolder: signInResult.data.user.id,
+    mode: 'authenticated',
+  };
 };
 
 const dataUrlToBlob = async (dataUrl: string) => {
@@ -104,9 +118,9 @@ export const saveGeneratedConcept = async (image: GeneratedImage): Promise<Gener
     return image;
   }
 
-  const user = await ensureUser(client);
+  const owner = await ensureSaveOwner(client);
   const conceptId = crypto.randomUUID();
-  const basePath = `${user.id}/${conceptId}`;
+  const basePath = `${owner.storageFolder}/${conceptId}`;
 
   const [referenceUpload, logoUpload, renderUpload] = await Promise.all([
     uploadDataUrl(client, ASSETS_BUCKET, `${basePath}/reference`, image.config.referenceImage),
@@ -118,7 +132,7 @@ export const saveGeneratedConcept = async (image: GeneratedImage): Promise<Gener
     .from('product_concepts')
     .insert({
       id: conceptId,
-      user_id: user.id,
+      user_id: owner.userId,
       client_id: image.id,
       product_name: image.config.productName,
       tagline: image.config.tagline,
@@ -141,6 +155,7 @@ export const saveGeneratedConcept = async (image: GeneratedImage): Promise<Gener
       image_metadata: {
         localTimestamp: image.timestamp,
         localImageUrlWasDataUrl: image.imageUrl.startsWith('data:'),
+        saveMode: owner.mode,
       },
     })
     .select('id, generated_image_url')
@@ -167,7 +182,7 @@ export const saveLandingPage = async (
     return null;
   }
 
-  const user = await ensureUser(client);
+  const owner = await ensureSaveOwner(client);
   const savedConcepts = concepts.filter(concept => concept.supabaseConceptId);
 
   if (savedConcepts.length === 0) {
@@ -177,7 +192,7 @@ export const saveLandingPage = async (
   const landingInsert = await client
     .from('landing_pages')
     .insert({
-      user_id: user.id,
+      user_id: owner.userId,
       hero_concept_id: savedConcepts[0].supabaseConceptId,
       eyebrow: content.eyebrow,
       headline: content.headline,

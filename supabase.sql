@@ -13,8 +13,9 @@
 -- These policies assume you use Supabase Auth. This app signs users in with
 -- Supabase anonymous auth before saving. In Supabase, enable:
 -- Authentication > Sign In / Providers > Anonymous sign-ins.
--- If you do not want anonymous auth, add a real login flow or write through a
--- trusted backend with the service role key.
+-- The policies also include a public prototype fallback for anon browser writes
+-- when user_id is null and files are stored under the public/ storage folder.
+-- For production, replace this with a real login flow or a trusted backend.
 
 create extension if not exists pgcrypto;
 
@@ -189,6 +190,35 @@ for delete
 to authenticated
 using (auth.uid() = user_id);
 
+drop policy if exists "Public prototype can read product concepts" on public.product_concepts;
+create policy "Public prototype can read product concepts"
+on public.product_concepts
+for select
+to anon
+using (user_id is null);
+
+drop policy if exists "Public prototype can insert product concepts" on public.product_concepts;
+create policy "Public prototype can insert product concepts"
+on public.product_concepts
+for insert
+to anon
+with check (user_id is null);
+
+drop policy if exists "Public prototype can update product concepts" on public.product_concepts;
+create policy "Public prototype can update product concepts"
+on public.product_concepts
+for update
+to anon
+using (user_id is null)
+with check (user_id is null);
+
+drop policy if exists "Public prototype can delete product concepts" on public.product_concepts;
+create policy "Public prototype can delete product concepts"
+on public.product_concepts
+for delete
+to anon
+using (user_id is null);
+
 -- Landing pages: users can manage only their own rows.
 drop policy if exists "Users can read their landing pages" on public.landing_pages;
 create policy "Users can read their landing pages"
@@ -218,6 +248,35 @@ on public.landing_pages
 for delete
 to authenticated
 using (auth.uid() = user_id);
+
+drop policy if exists "Public prototype can read landing pages" on public.landing_pages;
+create policy "Public prototype can read landing pages"
+on public.landing_pages
+for select
+to anon
+using (user_id is null);
+
+drop policy if exists "Public prototype can insert landing pages" on public.landing_pages;
+create policy "Public prototype can insert landing pages"
+on public.landing_pages
+for insert
+to anon
+with check (user_id is null);
+
+drop policy if exists "Public prototype can update landing pages" on public.landing_pages;
+create policy "Public prototype can update landing pages"
+on public.landing_pages
+for update
+to anon
+using (user_id is null)
+with check (user_id is null);
+
+drop policy if exists "Public prototype can delete landing pages" on public.landing_pages;
+create policy "Public prototype can delete landing pages"
+on public.landing_pages
+for delete
+to anon
+using (user_id is null);
 
 -- Landing page selections inherit ownership from the landing page.
 drop policy if exists "Users can read landing page concept selections" on public.landing_page_concepts;
@@ -296,11 +355,89 @@ using (
   )
 );
 
+drop policy if exists "Public prototype can read landing page concept selections" on public.landing_page_concepts;
+create policy "Public prototype can read landing page concept selections"
+on public.landing_page_concepts
+for select
+to anon
+using (
+  exists (
+    select 1
+    from public.landing_pages lp
+    where lp.id = landing_page_id
+      and lp.user_id is null
+  )
+);
+
+drop policy if exists "Public prototype can insert landing page concept selections" on public.landing_page_concepts;
+create policy "Public prototype can insert landing page concept selections"
+on public.landing_page_concepts
+for insert
+to anon
+with check (
+  exists (
+    select 1
+    from public.landing_pages lp
+    where lp.id = landing_page_id
+      and lp.user_id is null
+  )
+  and exists (
+    select 1
+    from public.product_concepts pc
+    where pc.id = concept_id
+      and pc.user_id is null
+  )
+);
+
+drop policy if exists "Public prototype can update landing page concept selections" on public.landing_page_concepts;
+create policy "Public prototype can update landing page concept selections"
+on public.landing_page_concepts
+for update
+to anon
+using (
+  exists (
+    select 1
+    from public.landing_pages lp
+    where lp.id = landing_page_id
+      and lp.user_id is null
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.landing_pages lp
+    where lp.id = landing_page_id
+      and lp.user_id is null
+  )
+  and exists (
+    select 1
+    from public.product_concepts pc
+    where pc.id = concept_id
+      and pc.user_id is null
+  )
+);
+
+drop policy if exists "Public prototype can delete landing page concept selections" on public.landing_page_concepts;
+create policy "Public prototype can delete landing page concept selections"
+on public.landing_page_concepts
+for delete
+to anon
+using (
+  exists (
+    select 1
+    from public.landing_pages lp
+    where lp.id = landing_page_id
+      and lp.user_id is null
+  )
+);
+
 -- Storage RLS
 -- Public read is enabled because the buckets are public. Authenticated users can
--- upload/update/delete files only inside their own first-level folder:
+-- upload/update/delete files inside their own first-level folder, and the anon
+-- prototype fallback can write only inside the public/ folder:
 -- product-concept-assets/{auth.uid()}/...
 -- product-concept-renders/{auth.uid()}/...
+-- product-concept-renders/public/...
 drop policy if exists "Anyone can read product concept storage files" on storage.objects;
 create policy "Anyone can read product concept storage files"
 on storage.objects
@@ -340,4 +477,38 @@ to authenticated
 using (
   bucket_id in ('product-concept-assets', 'product-concept-renders')
   and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "Public prototype can upload product concept storage files" on storage.objects;
+create policy "Public prototype can upload product concept storage files"
+on storage.objects
+for insert
+to anon
+with check (
+  bucket_id in ('product-concept-assets', 'product-concept-renders')
+  and (storage.foldername(name))[1] = 'public'
+);
+
+drop policy if exists "Public prototype can update product concept storage files" on storage.objects;
+create policy "Public prototype can update product concept storage files"
+on storage.objects
+for update
+to anon
+using (
+  bucket_id in ('product-concept-assets', 'product-concept-renders')
+  and (storage.foldername(name))[1] = 'public'
+)
+with check (
+  bucket_id in ('product-concept-assets', 'product-concept-renders')
+  and (storage.foldername(name))[1] = 'public'
+);
+
+drop policy if exists "Public prototype can delete product concept storage files" on storage.objects;
+create policy "Public prototype can delete product concept storage files"
+on storage.objects
+for delete
+to anon
+using (
+  bucket_id in ('product-concept-assets', 'product-concept-renders')
+  and (storage.foldername(name))[1] = 'public'
 );
