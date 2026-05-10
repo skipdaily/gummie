@@ -30,6 +30,7 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
   const [configured, setConfigured] = useState(isSupabaseConfigured());
   const [isCheckingConfig, setIsCheckingConfig] = useState(!isSupabaseConfigured());
   const activeMode = recoveryMode ? 'reset' : mode;
+  const inputClass = 'w-full min-h-[56px] bg-white border border-slate-300 text-slate-950 px-4 py-4 focus:outline-none focus:border-hazard focus:ring-2 focus:ring-hazard/20 placeholder-slate-400 text-base leading-relaxed rounded-sm';
 
   useEffect(() => {
     let isMounted = true;
@@ -137,14 +138,14 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
 
   return (
     <div className="min-h-[calc(100vh-220px)] flex items-center justify-center">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-sm p-6 shadow-2xl relative overflow-hidden">
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-sm p-6 shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
           <LockKeyhole size={120} />
         </div>
 
-        <div className="flex items-center gap-2 mb-6 border-b border-slate-800 pb-4 relative z-10">
+        <div className="flex items-center gap-2 mb-6 border-b border-slate-200 pb-4 relative z-10">
           <div className="w-1 h-6 bg-hazard"></div>
-          <h2 className="text-xl font-display font-bold uppercase text-white">{title}</h2>
+          <h2 className="text-xl font-display font-bold uppercase text-slate-950">{title}</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
@@ -152,13 +153,13 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
             <div>
               <label className="block text-xs font-mono text-hazard mb-1 uppercase tracking-wider">Email</label>
               <div className="relative">
-                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
+                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   required
-                  className="w-full bg-slate-950 border border-slate-700 text-white pl-10 pr-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700"
+                  className={`${inputClass} pl-10`}
                   placeholder="you@example.com"
                 />
               </div>
@@ -177,7 +178,7 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
                   onChange={(event) => setPassword(event.target.value)}
                   required
                   minLength={6}
-                  className="w-full bg-slate-950 border border-slate-700 text-white pl-4 pr-12 py-3 focus:outline-none focus:border-hazard placeholder-slate-700"
+                  className={`${inputClass} pr-12`}
                   placeholder="At least 6 characters"
                 />
                 <button
@@ -203,7 +204,7 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   required
                   minLength={6}
-                  className="w-full bg-slate-950 border border-slate-700 text-white pl-4 pr-12 py-3 focus:outline-none focus:border-hazard placeholder-slate-700"
+                  className={`${inputClass} pr-12`}
                   placeholder="Type it again"
                 />
                 <button
@@ -220,7 +221,7 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
           )}
 
           {isCheckingConfig && (
-            <p className="text-slate-400 font-mono text-xs bg-slate-950 border border-slate-800 rounded p-3">
+            <p className="text-slate-600 font-mono text-xs bg-slate-50 border border-slate-200 rounded p-3">
               Checking Supabase configuration...
             </p>
           )}
@@ -236,7 +237,7 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
             disabled={isWorking || isCheckingConfig}
             className={`w-full relative overflow-hidden flex items-center justify-center gap-3 py-4 px-6 font-display font-bold text-lg uppercase tracking-widest transition-all border-b-4 ${
               isWorking || isCheckingConfig
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border-slate-700'
+                ? 'bg-slate-200 text-slate-500 cursor-not-allowed border-slate-300'
                 : 'bg-hazard hover:bg-hazard-dark text-black border-hazard-dark active:border-b-0 active:translate-y-1'
             }`}
           >
@@ -245,13 +246,13 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
           </button>
 
           {error && (
-            <p className="text-red-400/80 font-mono text-xs break-all bg-red-950/30 border border-red-900/30 rounded p-3">
+            <p className="text-red-700 font-mono text-xs break-all bg-red-50 border border-red-200 rounded p-3">
               {error}
             </p>
           )}
 
           {message && (
-            <p className="text-hazard/90 font-mono text-xs bg-hazard/10 border border-hazard/20 rounded p-3">
+            <p className="text-amber-800 font-mono text-xs bg-amber-50 border border-amber-200 rounded p-3">
               {message}
             </p>
           )}
@@ -260,17 +261,17 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
         {!recoveryMode && (
           <div className="relative z-10 mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs font-mono uppercase">
             {activeMode !== 'signin' && (
-              <button onClick={() => { setMode('signin'); resetFeedback(); }} className="text-slate-400 hover:text-hazard">
+              <button onClick={() => { setMode('signin'); resetFeedback(); }} className="text-slate-500 hover:text-hazard">
                 Sign In
               </button>
             )}
             {activeMode !== 'signup' && (
-              <button onClick={() => { setMode('signup'); resetFeedback(); }} className="text-slate-400 hover:text-hazard">
+              <button onClick={() => { setMode('signup'); resetFeedback(); }} className="text-slate-500 hover:text-hazard">
                 Create Account
               </button>
             )}
             {activeMode !== 'forgot' && (
-              <button onClick={() => { setMode('forgot'); resetFeedback(); }} className="text-slate-400 hover:text-hazard">
+              <button onClick={() => { setMode('forgot'); resetFeedback(); }} className="text-slate-500 hover:text-hazard">
                 Forgot Password
               </button>
             )}

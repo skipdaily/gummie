@@ -15,7 +15,7 @@ const LandingPagePreview: React.FC<LandingPagePreviewProps> = ({ content, concep
   }
 
   return (
-    <div className="bg-white text-slate-950 border border-slate-700 rounded-sm overflow-hidden shadow-2xl">
+    <div className="bg-white text-slate-950 border border-slate-200 rounded-sm overflow-hidden shadow-lg">
       <section className="relative min-h-[620px] overflow-hidden">
         <img
           src={heroConcept.imageUrl}

@@ -222,14 +222,14 @@ const App: React.FC = () => {
   return (
     <Layout>
       <div className="mb-4 flex justify-end">
-        <div className="flex items-center gap-3 bg-slate-900 border border-slate-700 rounded-sm px-4 py-3">
+        <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-sm px-4 py-3 shadow-sm">
           <div className="text-right">
             <div className="text-xs font-mono text-slate-500 uppercase">Signed In</div>
-            <div className="text-sm text-white">{session.user.email}</div>
+            <div className="text-sm text-slate-950">{session.user.email}</div>
           </div>
           <button
             onClick={handleSignOut}
-            className="bg-slate-800 hover:bg-slate-700 text-white p-2 rounded-sm border border-slate-600 transition-colors"
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-sm border border-slate-300 transition-colors"
             title="Sign Out"
           >
             <LogOut size={18} />
@@ -237,23 +237,23 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <div className="mb-8 bg-slate-900 border border-slate-700 rounded-sm p-6 shadow-2xl relative overflow-hidden">
+      <div className="mb-8 bg-white border border-slate-200 rounded-sm p-6 shadow-lg relative overflow-hidden">
         <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
           <WandSparkles size={120} />
         </div>
-        <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-4">
+        <div className="flex items-center gap-2 mb-4 border-b border-slate-200 pb-4">
           <div className="w-1 h-6 bg-hazard"></div>
-          <h2 className="text-xl font-display font-bold uppercase text-white">Start With A Rough Idea</h2>
+          <h2 className="text-xl font-display font-bold uppercase text-slate-950">Start With A Rough Idea</h2>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-end relative z-10">
           <div>
-            <label className="block text-xs font-mono text-hazard mb-1 uppercase tracking-wider">General Thought</label>
+            <label className="block text-xs font-mono text-slate-600 mb-2 uppercase tracking-wider">General Thought</label>
             <textarea
               value={idea}
               onChange={(e) => setIdea(e.target.value)}
               placeholder="e.g. A smart lunchbox for nurses working long shifts, something clean, durable, and premium"
-              rows={3}
-              className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700 resize-none text-sm"
+              rows={5}
+              className="w-full min-h-[160px] bg-white border border-slate-300 text-slate-950 px-4 py-4 focus:outline-none focus:border-hazard focus:ring-2 focus:ring-hazard/20 placeholder-slate-400 resize-y text-base leading-relaxed rounded-sm"
             />
           </div>
           <button
@@ -261,7 +261,7 @@ const App: React.FC = () => {
             disabled={!idea.trim() || isDrafting || status === GenerationStatus.GENERATING}
             className={`min-h-[52px] flex items-center justify-center gap-3 px-6 font-display font-bold uppercase tracking-widest transition-all border-b-4
               ${!idea.trim() || isDrafting || status === GenerationStatus.GENERATING
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border-slate-700'
+                ? 'bg-slate-200 text-slate-500 cursor-not-allowed border-slate-300'
                 : 'bg-hazard hover:bg-hazard-dark text-black border-hazard-dark active:border-b-0 active:translate-y-1'
               }`}
           >
@@ -277,12 +277,12 @@ const App: React.FC = () => {
           </button>
         </div>
         {draftError && (
-          <p className="mt-3 text-red-400/80 font-mono text-xs break-all bg-red-950/30 border border-red-900/30 rounded p-3">
+          <p className="mt-3 text-red-700 font-mono text-xs break-all bg-red-50 border border-red-200 rounded p-3">
             {draftError}
           </p>
         )}
         {saveNotice && (
-          <p className="mt-3 text-hazard/90 font-mono text-xs break-all bg-hazard/10 border border-hazard/20 rounded p-3">
+          <p className="mt-3 text-amber-800 font-mono text-xs break-all bg-amber-50 border border-amber-200 rounded p-3">
             {saveNotice}
           </p>
         )}
@@ -291,7 +291,7 @@ const App: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Left Column: Controls (4 cols) */}
-        <div className="lg:col-span-4 space-y-8">
+        <div className="lg:col-span-5 space-y-8">
           <Controls 
             config={config} 
             onChange={setConfig} 
@@ -302,8 +302,8 @@ const App: React.FC = () => {
 
           {/* History List (Mobile/Desktop) */}
           {history.length > 0 && (
-            <div className="bg-slate-900 border border-slate-700 rounded-sm p-4">
-              <div className="flex items-center gap-2 mb-4 text-slate-400 border-b border-slate-800 pb-2">
+            <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-4 text-slate-600 border-b border-slate-200 pb-2">
                 <History size={16} />
                 <h3 className="text-sm font-bold uppercase font-display">Recent Concepts</h3>
               </div>
@@ -313,7 +313,7 @@ const App: React.FC = () => {
                     key={img.id}
                     onClick={() => loadFromHistory(img)}
                     className={`flex items-center gap-3 p-2 rounded cursor-pointer transition-colors border ${
-                      currentImage?.id === img.id ? 'bg-slate-800 border-hazard/50' : 'hover:bg-slate-800 border-transparent'
+                      currentImage?.id === img.id ? 'bg-amber-50 border-hazard/60' : 'hover:bg-slate-50 border-transparent'
                     }`}
                   >
                     <button
@@ -324,28 +324,28 @@ const App: React.FC = () => {
                       className={`w-5 h-5 shrink-0 border rounded-sm flex items-center justify-center transition-colors ${
                         selectedConceptIds.includes(img.id)
                           ? 'bg-hazard border-hazard text-black'
-                          : 'border-slate-600 hover:border-hazard text-transparent'
+                          : 'border-slate-400 hover:border-hazard text-transparent'
                       }`}
                       title={selectedConceptIds.includes(img.id) ? 'Remove from landing page' : 'Add to landing page'}
                     >
                       <Check size={14} strokeWidth={3} />
                     </button>
-                    <img src={img.imageUrl} alt="thumbnail" className="w-12 h-12 object-cover rounded-sm bg-slate-950" />
+                    <img src={img.imageUrl} alt="thumbnail" className="w-12 h-12 object-cover rounded-sm bg-slate-100" />
                     <div className="overflow-hidden">
-                      <div className="text-white font-display text-sm truncate font-bold">{img.config.productName}</div>
+                      <div className="text-slate-950 font-display text-sm truncate font-bold">{img.config.productName}</div>
                       <div className="text-slate-500 text-xs font-mono truncate">{img.config.targetAudience}</div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-4 pt-4 border-t border-slate-800">
+              <div className="mt-4 pt-4 border-t border-slate-200">
                 <button
                   onClick={handleGenerateLandingPage}
                   disabled={selectedConcepts.length === 0 || isGeneratingLanding}
                   className={`w-full flex items-center justify-center gap-2 px-4 py-3 font-display font-bold uppercase tracking-widest border-b-4 transition-all ${
                     selectedConcepts.length === 0 || isGeneratingLanding
-                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed border-slate-700'
+                      ? 'bg-slate-200 text-slate-500 cursor-not-allowed border-slate-300'
                       : 'bg-hazard hover:bg-hazard-dark text-black border-hazard-dark active:border-b-0 active:translate-y-1'
                   }`}
                 >
@@ -363,7 +363,7 @@ const App: React.FC = () => {
                   {selectedConcepts.length} SELECTED CONCEPT{selectedConcepts.length === 1 ? '' : 'S'}
                 </p>
                 {landingError && (
-                  <p className="mt-3 text-red-400/80 font-mono text-xs break-all bg-red-950/30 border border-red-900/30 rounded p-3">
+                  <p className="mt-3 text-red-700 font-mono text-xs break-all bg-red-50 border border-red-200 rounded p-3">
                     {landingError}
                   </p>
                 )}
@@ -373,23 +373,23 @@ const App: React.FC = () => {
         </div>
 
         {/* Right Column: Display (8 cols) */}
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-7">
           <ResultDisplay currentImage={currentImage} status={status} errorMessage={errorMessage} />
           
           <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-slate-900/50 p-4 border border-slate-800 rounded-sm">
+            <div className="bg-white p-4 border border-slate-200 rounded-sm shadow-sm">
               <h4 className="text-hazard font-mono text-xs uppercase mb-2">Consistency Protocol</h4>
               <p className="text-slate-500 text-sm">
                 The AI uses a consistent product photography prompt so each concept feels polished while still following your inputs.
               </p>
             </div>
-            <div className="bg-slate-900/50 p-4 border border-slate-800 rounded-sm">
+            <div className="bg-white p-4 border border-slate-200 rounded-sm shadow-sm">
               <h4 className="text-hazard font-mono text-xs uppercase mb-2">Text Rendering</h4>
               <p className="text-slate-500 text-sm">
                 AI may misspell small text. Focus on the main logo and overall "vibe" for best results.
               </p>
             </div>
-             <div className="bg-slate-900/50 p-4 border border-slate-800 rounded-sm">
+             <div className="bg-white p-4 border border-slate-200 rounded-sm shadow-sm">
               <h4 className="text-hazard font-mono text-xs uppercase mb-2">Image Model</h4>
               <p className="text-slate-500 text-sm">
                 Powered by Gemini 3.1 Flash Image Preview. Optimized for high-speed concept iteration.
@@ -401,9 +401,9 @@ const App: React.FC = () => {
 
       {landingPage && selectedConcepts.length > 0 && (
         <div ref={landingPreviewRef} className="mt-10">
-          <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-4">
+          <div className="flex items-center gap-2 mb-4 border-b border-slate-200 pb-4">
             <div className="w-1 h-6 bg-hazard"></div>
-            <h2 className="text-xl font-display font-bold uppercase text-white">Generated Landing Page</h2>
+            <h2 className="text-xl font-display font-bold uppercase text-slate-950">Generated Landing Page</h2>
           </div>
           <LandingPagePreview content={landingPage} concepts={selectedConcepts} />
         </div>

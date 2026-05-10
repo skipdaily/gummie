@@ -42,12 +42,12 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ currentImage, status, err
 
   if (status === GenerationStatus.ERROR) {
     return (
-      <div className="h-full min-h-[500px] flex items-center justify-center bg-slate-900 border-2 border-red-900/50 border-dashed rounded-sm p-8">
+      <div className="h-full min-h-[500px] flex items-center justify-center bg-white border-2 border-red-200 border-dashed rounded-sm p-8 shadow-sm">
         <div className="text-center max-w-md">
           <div className="text-red-500 font-display text-4xl font-bold mb-4">SYSTEM FAILURE</div>
-          <p className="text-slate-400">The machinery jammed. Please check your inputs and API key, then try again.</p>
+          <p className="text-slate-600">The machinery jammed. Please check your inputs and API key, then try again.</p>
           {errorMessage && (
-            <p className="text-red-400/70 font-mono text-xs mt-4 break-all bg-red-950/30 border border-red-900/30 rounded p-3">{errorMessage}</p>
+            <p className="text-red-700 font-mono text-xs mt-4 break-all bg-red-50 border border-red-200 rounded p-3">{errorMessage}</p>
           )}
         </div>
       </div>
@@ -56,17 +56,17 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ currentImage, status, err
 
   if (status === GenerationStatus.GENERATING) {
     return (
-      <div className="h-full min-h-[500px] flex flex-col items-center justify-center bg-slate-900 border border-slate-700 rounded-sm relative overflow-hidden">
+      <div className="h-full min-h-[500px] flex flex-col items-center justify-center bg-white border border-slate-200 rounded-sm relative overflow-hidden shadow-sm">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
         
         <div className="relative z-10 flex flex-col items-center">
-          <div className="w-24 h-24 border-4 border-slate-700 border-t-hazard rounded-full animate-spin mb-6"></div>
-          <h3 className="text-2xl font-display font-bold text-white uppercase tracking-widest animate-pulse">Generating Image...</h3>
+          <div className="w-24 h-24 border-4 border-slate-200 border-t-hazard rounded-full animate-spin mb-6"></div>
+          <h3 className="text-2xl font-display font-bold text-slate-950 uppercase tracking-widest animate-pulse">Generating Image...</h3>
           <p className="text-hazard font-mono text-sm mt-2">RENDERING PRODUCT DETAILS</p>
         </div>
         
         {/* Scrolling terminal text effect */}
-        <div className="absolute bottom-4 left-4 text-xs font-mono text-slate-600 opacity-50">
+        <div className="absolute bottom-4 left-4 text-xs font-mono text-slate-400 opacity-80">
             <div>&gt; INIT_MODEL: GEMINI-3.1-FLASH-IMAGE-PREVIEW</div>
            <div>&gt; LOADING_TEXTURES: PRODUCT_MATERIALS</div>
            <div>&gt; ADJUSTING_LIGHTING: STUDIO_SCENE</div>
@@ -77,20 +77,20 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ currentImage, status, err
 
   if (!currentImage) {
     return (
-      <div className="h-full min-h-[500px] flex items-center justify-center bg-slate-900 border border-slate-700 rounded-sm relative overflow-hidden">
+      <div className="h-full min-h-[500px] flex items-center justify-center bg-white border border-slate-200 rounded-sm relative overflow-hidden shadow-sm">
         <div className="text-center opacity-30">
-          <div className="font-display text-6xl font-bold text-slate-700 mb-2">NO SIGNAL</div>
+          <div className="font-display text-6xl font-bold text-slate-500 mb-2">NO SIGNAL</div>
           <p className="font-mono text-slate-500 uppercase tracking-widest">Awaiting Concept Specs</p>
         </div>
         {/* Placeholder Grid */}
-        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="relative group bg-black border border-slate-700 rounded-sm overflow-hidden shadow-2xl">
+      <div className="relative group bg-white border border-slate-200 rounded-sm overflow-hidden shadow-lg">
         <img 
           src={currentImage.imageUrl} 
           alt={currentImage.config.productName} 
@@ -120,7 +120,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ currentImage, status, err
       </div>
       
       {/* Specs read-out */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-sm flex justify-between items-center text-xs font-mono text-slate-500">
+      <div className="bg-white border border-slate-200 p-4 rounded-sm flex justify-between items-center text-xs font-mono text-slate-500 shadow-sm">
         <div>ID: {currentImage.id.substring(0, 8).toUpperCase()}</div>
         <div>{new Date(currentImage.timestamp).toLocaleString()}</div>
       </div>

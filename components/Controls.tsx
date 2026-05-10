@@ -13,6 +13,9 @@ interface ControlsProps {
 const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGenerating, isDrafting = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const inputClass = 'w-full min-h-[56px] bg-white border border-slate-300 text-slate-950 px-4 py-4 focus:outline-none focus:border-hazard focus:ring-2 focus:ring-hazard/20 placeholder-slate-400 text-base leading-relaxed rounded-sm';
+  const textareaClass = 'w-full min-h-[132px] bg-white border border-slate-300 text-slate-950 px-4 py-4 focus:outline-none focus:border-hazard focus:ring-2 focus:ring-hazard/20 placeholder-slate-400 resize-y text-base leading-relaxed rounded-sm';
+  const labelClass = 'block text-xs font-mono text-slate-600 mb-2 uppercase tracking-wider';
 
   const handleChange = (field: keyof ProductConfig, value: string) => {
     onChange({ ...config, [field]: value });
@@ -44,21 +47,21 @@ const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGen
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-sm p-6 shadow-2xl relative overflow-hidden group">
+    <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-lg relative overflow-hidden group">
       {/* Industrial decoration */}
       <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
         <Settings2 size={120} />
       </div>
 
-      <div className="flex items-center gap-2 mb-6 border-b border-slate-800 pb-4">
+      <div className="flex items-center gap-2 mb-6 border-b border-slate-200 pb-4">
         <div className="w-1 h-6 bg-hazard"></div>
-        <h2 className="text-xl font-display font-bold uppercase text-white">Product Specs</h2>
+        <h2 className="text-xl font-display font-bold uppercase text-slate-950">Product Specs</h2>
       </div>
 
       <div className="space-y-6">
         {/* Asset Uploads */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-slate-950/50 border-2 border-dashed border-slate-700 rounded-sm p-4 hover:border-hazard/50 transition-colors">
+          <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-sm p-4 hover:border-hazard/70 transition-colors">
             <div className="flex justify-between items-center mb-2">
               <label className="text-xs font-mono text-hazard uppercase tracking-wider flex items-center gap-2">
                 <ImageIcon size={14} /> Hero Reference Image
@@ -74,7 +77,7 @@ const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGen
             </div>
             
             {config.referenceImage ? (
-              <div className="relative group rounded-sm overflow-hidden border border-slate-600">
+              <div className="relative group rounded-sm overflow-hidden border border-slate-300">
                 <img 
                   src={config.referenceImage} 
                   alt="Reference" 
@@ -87,7 +90,7 @@ const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGen
             ) : (
               <div 
                 onClick={() => fileInputRef.current?.click()}
-                className="h-32 flex flex-col items-center justify-center cursor-pointer text-slate-500 hover:text-slate-300 transition-colors"
+                className="h-32 flex flex-col items-center justify-center cursor-pointer text-slate-500 hover:text-slate-700 transition-colors"
               >
                 <Upload size={24} className="mb-2" />
                 <span className="text-xs font-mono uppercase">Upload Source Style</span>
@@ -102,7 +105,7 @@ const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGen
             )}
           </div>
 
-          <div className="bg-slate-950/50 border-2 border-dashed border-slate-700 rounded-sm p-4 hover:border-hazard/50 transition-colors">
+          <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-sm p-4 hover:border-hazard/70 transition-colors">
             <div className="flex justify-between items-center mb-2">
               <label className="text-xs font-mono text-hazard uppercase tracking-wider flex items-center gap-2">
                 <ImageIcon size={14} /> Logo Image
@@ -118,7 +121,7 @@ const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGen
             </div>
             
             {config.logoImage ? (
-              <div className="relative group rounded-sm overflow-hidden border border-slate-600 bg-slate-950">
+              <div className="relative group rounded-sm overflow-hidden border border-slate-300 bg-white">
                 <img 
                   src={config.logoImage} 
                   alt="Logo" 
@@ -131,7 +134,7 @@ const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGen
             ) : (
               <div 
                 onClick={() => logoInputRef.current?.click()}
-                className="h-32 flex flex-col items-center justify-center cursor-pointer text-slate-500 hover:text-slate-300 transition-colors"
+                className="h-32 flex flex-col items-center justify-center cursor-pointer text-slate-500 hover:text-slate-700 transition-colors"
               >
                 <Upload size={24} className="mb-2" />
                 <span className="text-xs font-mono uppercase">Upload Logo</span>
@@ -148,38 +151,38 @@ const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGen
         </div>
 
         {/* Product Identity */}
-        <div className="space-y-4 border-b border-slate-800 pb-6">
+        <div className="space-y-5 border-b border-slate-200 pb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono text-hazard mb-1 uppercase tracking-wider">Product Name</label>
+              <label className={labelClass}>Product Name</label>
               <input
                 type="text"
                 value={config.productName}
                 onChange={(e) => handleChange('productName', e.target.value)}
                 placeholder="e.g. FIELDKIT COOLER"
-                className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard font-display uppercase tracking-wide placeholder-slate-700"
+                className={`${inputClass} font-display uppercase tracking-wide`}
               />
             </div>
             <div>
-              <label className="block text-xs font-mono text-hazard mb-1 uppercase tracking-wider">Tagline / Subtitle</label>
-              <input
-                type="text"
+              <label className={labelClass}>Tagline / Subtitle</label>
+              <textarea
                 value={config.tagline}
                 onChange={(e) => handleChange('tagline', e.target.value)}
                 placeholder="e.g. Built for long days in rough conditions"
-                className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700"
+                rows={3}
+                className={textareaClass}
               />
             </div>
           </div>
           
           <div>
-            <label className="block text-xs font-mono text-hazard mb-1 uppercase tracking-wider">Label Artwork / Icon</label>
-            <input
-              type="text"
+            <label className={labelClass}>Label Artwork / Icon</label>
+            <textarea
               value={config.labelImageDescription}
               onChange={(e) => handleChange('labelImageDescription', e.target.value)}
               placeholder="e.g. A mountain badge, abstract monogram, or clean technical icon"
-              className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700 text-sm"
+              rows={3}
+              className={textareaClass}
             />
           </div>
         </div>
@@ -187,70 +190,70 @@ const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGen
         {/* Target & Environment */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-mono text-slate-400 mb-1 uppercase">Target Audience</label>
+            <label className={labelClass}>Target Audience</label>
             <input
               type="text"
               value={config.targetAudience}
               onChange={(e) => handleChange('targetAudience', e.target.value)}
               placeholder="e.g. Outdoor crews, home cooks, remote workers"
-              className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700 text-sm"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="block text-xs font-mono text-slate-400 mb-1 uppercase">Package / Form Style</label>
+            <label className={labelClass}>Package / Form Style</label>
             <input
               type="text"
               value={config.packageStyle}
               onChange={(e) => handleChange('packageStyle', e.target.value)}
               placeholder="e.g. Glass jar, travel pouch, folding case"
-              className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700 text-sm"
+              className={inputClass}
             />
           </div>
         </div>
 
         {/* Scene Description */}
         <div>
-          <label className="block text-xs font-mono text-hazard mb-1 uppercase tracking-wider">Scene / Action Description</label>
+          <label className={labelClass}>Scene / Action Description</label>
           <textarea
             value={config.sceneDescription}
             onChange={(e) => handleChange('sceneDescription', e.target.value)}
             placeholder="e.g. Product on a kitchen counter, trailhead table, studio desk, or retail shelf"
-            rows={2}
-            className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700 resize-none text-sm"
+            rows={4}
+            className={textareaClass}
           />
         </div>
 
         {/* Environment Details */}
         <div>
-          <label className="block text-xs font-mono text-slate-400 mb-1 uppercase">Background Props & Setting</label>
+          <label className={labelClass}>Background Props & Setting</label>
           <textarea
             value={config.environmentDetails}
             onChange={(e) => handleChange('environmentDetails', e.target.value)}
             placeholder="Describe the background props and setting..."
-            rows={2}
-            className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700 resize-none text-sm"
+            rows={4}
+            className={textareaClass}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            <div>
-            <label className="block text-xs font-mono text-slate-400 mb-1 uppercase">Product Details</label>
-            <input
-              type="text"
+            <label className={labelClass}>Product Details</label>
+            <textarea
               value={config.productDetails}
               onChange={(e) => handleChange('productDetails', e.target.value)}
               placeholder="Materials, features, finishes, accessories"
-              className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700 text-sm"
+              rows={4}
+              className={textareaClass}
             />
           </div>
            <div>
-            <label className="block text-xs font-mono text-slate-400 mb-1 uppercase">Accent Color</label>
+            <label className={labelClass}>Accent Color</label>
             <input
               type="text"
               value={config.accentColor}
               onChange={(e) => handleChange('accentColor', e.target.value)}
               placeholder="e.g. Cobalt Blue, #FFB800, Forest Green"
-              className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700 text-sm"
+              className={inputClass}
             />
           </div>
         </div>
@@ -261,7 +264,7 @@ const Controls: React.FC<ControlsProps> = ({ config, onChange, onGenerate, isGen
             disabled={isGenerating || isDrafting}
             className={`w-full relative overflow-hidden group flex items-center justify-center gap-3 py-4 px-6 font-display font-bold text-lg uppercase tracking-widest transition-all
               ${isGenerating || isDrafting 
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed border-slate-700' 
+                ? 'bg-slate-200 text-slate-500 cursor-not-allowed border-slate-300' 
                 : 'bg-hazard hover:bg-hazard-dark text-black border-hazard-dark'
               } border-b-4 active:border-b-0 active:translate-y-1`}
           >
