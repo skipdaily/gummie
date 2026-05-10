@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LockKeyhole, Mail, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, LockKeyhole, Mail, RefreshCw } from 'lucide-react';
 import {
   isSupabaseConfigured,
   sendPasswordReset,
@@ -24,6 +24,8 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isWorking, setIsWorking] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const configured = isSupabaseConfigured();
   const activeMode = recoveryMode ? 'reset' : mode;
@@ -138,38 +140,66 @@ const AuthPanel: React.FC<AuthPanelProps> = ({ recoveryMode, onAuthComplete, onR
               <label className="block text-xs font-mono text-hazard mb-1 uppercase tracking-wider">
                 {activeMode === 'reset' ? 'New Password' : 'Password'}
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                minLength={6}
-                className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700"
-                placeholder="At least 6 characters"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full bg-slate-950 border border-slate-700 text-white pl-4 pr-12 py-3 focus:outline-none focus:border-hazard placeholder-slate-700"
+                  placeholder="At least 6 characters"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-hazard transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
           )}
 
           {(activeMode === 'signup' || activeMode === 'reset') && (
             <div>
               <label className="block text-xs font-mono text-hazard mb-1 uppercase tracking-wider">Re-enter Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                required
-                minLength={6}
-                className="w-full bg-slate-950 border border-slate-700 text-white px-4 py-3 focus:outline-none focus:border-hazard placeholder-slate-700"
-                placeholder="Type it again"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full bg-slate-950 border border-slate-700 text-white pl-4 pr-12 py-3 focus:outline-none focus:border-hazard placeholder-slate-700"
+                  placeholder="Type it again"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(prev => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-hazard transition-colors"
+                  aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}
+                  title={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
+          )}
+
+          {!configured && (
+            <p className="text-hazard/90 font-mono text-xs bg-hazard/10 border border-hazard/20 rounded p-3">
+              Supabase is not configured in this build yet. Add the Vercel environment variables, then redeploy.
+            </p>
           )}
 
           <button
             type="submit"
-            disabled={isWorking || !configured}
+            disabled={isWorking}
             className={`w-full relative overflow-hidden flex items-center justify-center gap-3 py-4 px-6 font-display font-bold text-lg uppercase tracking-widest transition-all border-b-4 ${
-              isWorking || !configured
+              isWorking
                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed border-slate-700'
                 : 'bg-hazard hover:bg-hazard-dark text-black border-hazard-dark active:border-b-0 active:translate-y-1'
             }`}
