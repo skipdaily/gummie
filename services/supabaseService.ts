@@ -260,6 +260,7 @@ const savedConceptSelect = `
   generated_image_url,
   prompt_used,
   generation_status,
+  raw_config,
   created_at,
   updated_at
 `;
@@ -267,7 +268,7 @@ const savedConceptSelect = `
 const mapSavedConceptRow = (row: any): SavedConcept => ({
   id: row.id,
   clientId: row.client_id,
-  brandName: row.brand_name,
+  brandName: row.brand_name || row.raw_config?.brandName || '',
   productName: row.product_name,
   tagline: row.tagline,
   targetAudience: row.target_audience,
@@ -459,6 +460,7 @@ export const saveLandingPage = async (
       selected_concept_snapshot: savedConcepts.map(concept => ({
         id: concept.supabaseConceptId,
         clientId: concept.id,
+        brandName: concept.config.brandName,
         productName: concept.config.productName,
         targetAudience: concept.config.targetAudience,
         generatedImageUrl: concept.imageUrl,

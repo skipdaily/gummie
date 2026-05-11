@@ -95,6 +95,10 @@ create table if not exists public.product_concepts (
   updated_at timestamptz not null default now()
 );
 
+-- Migration for existing projects created before Brand Name was added.
+alter table public.product_concepts
+add column if not exists brand_name text not null default '';
+
 drop trigger if exists set_product_concepts_updated_at on public.product_concepts;
 create trigger set_product_concepts_updated_at
 before update on public.product_concepts

@@ -70,6 +70,7 @@ const parseDraftJson = (text: string): ProductDraft => {
 
   const data = JSON.parse(match[0]);
   const requiredFields: Array<keyof ProductDraft> = [
+    'brandName',
     'productName',
     'tagline',
     'targetAudience',
@@ -160,6 +161,7 @@ Return valid JSON only. No markdown, no commentary.
 
 JSON shape:
 {
+  "brandName": "short brand or company name, distinct from product name",
   "productName": "short brandable product name, all caps if it works",
   "tagline": "short product subtitle",
   "targetAudience": "who this product is for",
@@ -216,6 +218,7 @@ export const generateLandingPageContent = async (concepts: GeneratedImage[]): Pr
   const ai = new GoogleGenAI({ apiKey });
   const conceptBrief = concepts.map((concept, index) => ({
     order: index + 1,
+    brandName: concept.config.brandName,
     productName: concept.config.productName,
     tagline: concept.config.tagline,
     targetAudience: concept.config.targetAudience,
@@ -336,6 +339,7 @@ const buildPrompt = (config: ProductConfig): string => {
 
   // Common Product Specs
   prompt += `
+    - Brand Name: "${config.brandName}" (Use this as the maker, brand, or company name. Keep it distinct from the product name).
     - Name on Label: "${config.productName}" (Make the text bold, readable, and appropriate for the product category).
     - Subtitle/Tagline: "${config.tagline}" (Smaller supporting typography that matches the brand direction).
     - Label Artwork/Graphics: "${config.labelImageDescription}" (This MUST be rendered as a high-quality graphic, illustration, or icon printed directly on the product label).

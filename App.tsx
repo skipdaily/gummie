@@ -27,7 +27,7 @@ const INITIAL_CONFIG: ProductConfig = {
 };
 
 const configFromSavedConcept = (concept: SavedConcept): ProductConfig => ({
-  brandName: concept.brandName,
+  brandName: concept.brandName || INITIAL_CONFIG.brandName,
   productName: concept.productName,
   tagline: concept.tagline,
   targetAudience: concept.targetAudience,
@@ -46,7 +46,10 @@ const CONFIG_STORAGE_KEY = 'grit-grime-product-config';
 const loadStoredConfig = (): ProductConfig => {
   try {
     const stored = localStorage.getItem(CONFIG_STORAGE_KEY);
-    if (stored) return { ...INITIAL_CONFIG, ...JSON.parse(stored) };
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return { ...INITIAL_CONFIG, ...parsed, brandName: parsed.brandName || INITIAL_CONFIG.brandName };
+    }
   } catch {}
   return INITIAL_CONFIG;
 };
@@ -170,6 +173,7 @@ const App: React.FC = () => {
       const draft = await generateProductDraft(trimmedIdea);
       setConfig(prev => ({
         ...draft,
+        brandName: draft.brandName || prev.brandName || INITIAL_CONFIG.brandName,
         referenceImage: prev.referenceImage ?? null,
         logoImage: prev.logoImage ?? null
       }));
