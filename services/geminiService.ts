@@ -17,6 +17,32 @@ Visually and conceptually: strong materials, thoughtful details, confident brand
 The product should look like a real manufacturable object, not a generic mockup or abstract concept.
 `;
 
+const getGeminiApiKey = (): string => {
+  const apiKey = process.env.API_KEY?.trim();
+
+  if (!apiKey) {
+    throw new Error("Gemini API key is missing. Add GEMINI_API_KEY to .env.local and Vercel, then restart or redeploy.");
+  }
+
+  return apiKey;
+};
+
+const getGeminiErrorMessage = (error: any): string => {
+  const rawMessage = error?.message || error?.toString() || "Unknown error";
+
+  if (rawMessage.includes("CONSUMER_SUSPENDED") || rawMessage.toLowerCase().includes("has been suspended")) {
+    return "The configured Gemini API key is suspended. Create a new Google AI Studio API key, set GEMINI_API_KEY in .env.local and Vercel, then restart or redeploy.";
+  }
+
+  if (rawMessage.includes("PERMISSION_DENIED") || rawMessage.includes("403")) {
+    return "Gemini rejected the configured API key. Check that GEMINI_API_KEY is active, has access to the Generative Language API, and is set in .env.local and Vercel.";
+  }
+
+  return rawMessage
+    .replace(/api_key:[^'"\s,}]+/g, "api_key:[redacted]")
+    .replace(/AIza[0-9A-Za-z_-]+/g, "[redacted api key]");
+};
+
 const getBase64Data = (dataUrl: string) => {
   const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
   if (!matches || matches.length !== 3) {
@@ -147,10 +173,7 @@ const parseLandingJson = (text: string): LandingPageContent => {
 };
 
 export const generateProductDraft = async (idea: string): Promise<ProductDraft> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("API Key not found in environment variables");
-  }
+  const apiKey = getGeminiApiKey();
 
   const ai = new GoogleGenAI({ apiKey });
   const promptText = `
@@ -203,17 +226,14 @@ ${idea}
 
     throw lastError || new Error("No text model could draft specs");
   } catch (error: any) {
-    const msg = error?.message || error?.toString() || "Unknown error";
-    console.error("Gemini Product Draft Error:", msg, error);
+    const msg = getGeminiErrorMessage(error);
+    console.error("Gemini Product Draft Error:", msg);
     throw new Error(`Product spec draft failed: ${msg}`);
   }
 };
 
 export const generateLandingPageContent = async (concepts: GeneratedImage[]): Promise<LandingPageContent> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("API Key not found in environment variables");
-  }
+  const apiKey = getGeminiApiKey();
 
   const ai = new GoogleGenAI({ apiKey });
   const conceptBrief = concepts.map((concept, index) => ({
@@ -290,8 +310,8 @@ ${JSON.stringify(conceptBrief, null, 2)}
 
     throw lastError || new Error("No text model could draft a landing page");
   } catch (error: any) {
-    const msg = error?.message || error?.toString() || "Unknown error";
-    console.error("Gemini Landing Page Error:", msg, error);
+    const msg = getGeminiErrorMessage(error);
+    console.error("Gemini Landing Page Error:", msg);
     throw new Error(`Landing page generation failed: ${msg}`);
   }
 };
@@ -370,10 +390,7 @@ const buildPrompt = (config: ProductConfig): string => {
 };
 
 export const generateProductImage = async (config: ProductConfig): Promise<string> => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("API Key not found in environment variables");
-  }
+  const apiKey = getGeminiApiKey();
 
   const ai = new GoogleGenAI({ apiKey });
   const promptText = buildPrompt(config);
@@ -431,8 +448,8 @@ export const generateProductImage = async (config: ProductConfig): Promise<strin
     throw new Error("No image data found in response");
 
   } catch (error: any) {
-    const msg = error?.message || error?.toString() || "Unknown error";
-    console.error("Gemini Image Generation Error:", msg, error);
+    const msg = getGeminiErrorMessage(error);
+    console.error("Gemini Image Generation Error:", msg);
     throw new Error(`Image generation failed: ${msg}`);
   }
 };
